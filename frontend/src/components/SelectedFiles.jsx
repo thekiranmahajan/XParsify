@@ -6,8 +6,9 @@ import {
 } from "react-icons/ri";
 import { XLF_CONVERSIONS, WORD_CONVERSIONS } from "../utils/constants";
 import axiosInstance from "../utils/axiosInstance";
+import toast from "react-hot-toast";
 
-const SelectedFiles = ({ files, onRemoveFile, onConvertAll }) => {
+const SelectedFiles = ({ files, onRemoveFile }) => {
   const [conversionFormats, setConversionFormats] = useState(
     files.map(() => "")
   );
@@ -19,45 +20,30 @@ const SelectedFiles = ({ files, onRemoveFile, onConvertAll }) => {
     setConversionFormats(newFormats);
   };
 
-  const handleIndividualConvert = async (index) => {
-    const file = files[index];
-    const format = conversionFormats[index];
+  const handleConvert = async (index = null) => {
     const formData = new FormData();
-    formData.append("files", file);
-    formData.append("format", format);
-
-    try {
-      console.log(`Converting file: ${file.name} to format: ${format}`);
-      const response = await axiosInstance.post(
-        `/${file.name.endsWith(".xlf") ? "xlf" : "word"}`,
-        formData
-      );
-      console.log("Conversion response:", response.data);
-      setConvertedFiles((prev) => [...prev, ...response.data.results]);
-    } catch (error) {
-      console.error("Error converting file:", error);
-      console.error("Error response:", error.response);
-    }
-  };
-
-  const handleConvertAll = async () => {
-    const formData = new FormData();
-    files.forEach((file, index) => {
+    const targetFiles = index !== null ? [files[index]] : files;
+    targetFiles.forEach((file, idx) => {
       formData.append("files", file);
-      formData.append("format", conversionFormats[index]);
+      formData.append(
+        "format",
+        conversionFormats[index !== null ? index : idx]
+      );
     });
 
     try {
-      console.log("Converting all files");
+      console.log(`Converting ${index !== null ? "file" : "all files"}`);
       const response = await axiosInstance.post(
         `/${files[0].name.endsWith(".xlf") ? "xlf" : "word"}`,
         formData
       );
-      console.log("Batch conversion response:", response.data);
-      setConvertedFiles(response.data.results);
+      console.log("Conversion response:", response.data);
+      setConvertedFiles((prev) => [...prev, ...response.data.results]);
+      toast.success("Files converted successfully!");
     } catch (error) {
       console.error("Error converting files:", error);
       console.error("Error response:", error.response);
+      toast.error("Error converting files.");
     }
   };
 
@@ -95,7 +81,7 @@ const SelectedFiles = ({ files, onRemoveFile, onConvertAll }) => {
             </select>
             <button
               className="btn btn-primary btn-xs"
-              onClick={() => handleIndividualConvert(index)}
+              onClick={() => handleConvert(index)}
               disabled={!conversionFormats[index]}
             >
               <RiFileTransferLine />
@@ -120,7 +106,7 @@ const SelectedFiles = ({ files, onRemoveFile, onConvertAll }) => {
       ))}
       <button
         className="btn btn-primary mt-4 w-56"
-        onClick={handleConvertAll}
+        onClick={() => handleConvert()}
         disabled={conversionFormats.some((format) => !format)}
       >
         Convert All and Download

@@ -19,17 +19,20 @@ export const processXLF = async (req, res) => {
       console.log(`Processing file: ${file.originalname}`);
       const data = await parseXLF(file.path);
       let filePath;
+      const fileNameWithoutExt = path.parse(file.originalname).name;
       switch (format) {
         case "csv":
           const csvData = await convertToCSV(data);
-          filePath = path.join("uploads", `${file.originalname}.csv`);
+          filePath = path.join("uploads", `${fileNameWithoutExt}.csv`);
           fs.writeFileSync(filePath, csvData);
           break;
-        case "xlxs":
-          filePath = await convertToExcel(data);
+        case "xlsx":
+          filePath = path.join("uploads", `${fileNameWithoutExt}.xlsx`);
+          await convertToExcel(data, filePath);
           break;
         case "word":
-          filePath = await convertToWord(data);
+          filePath = path.join("uploads", `${fileNameWithoutExt}.docx`);
+          await convertToWord({ content: data }, filePath);
           break;
         // Add other formats as needed
         default:

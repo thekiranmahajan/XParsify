@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { FileUpload, Footer, Header } from "./components";
 import SelectedFiles from "./components/SelectedFiles";
+import { Toaster } from "react-hot-toast";
 
 const App = () => {
   const [selectedFiles, setSelectedFiles] = useState([]);
@@ -31,6 +32,7 @@ const App = () => {
             onConvertAll={handleConvertAll}
           />
         )}
+        <Toaster />
       </main>
       <Footer />
     </div>

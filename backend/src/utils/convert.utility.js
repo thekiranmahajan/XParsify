@@ -1,7 +1,7 @@
 import fs from "fs";
 import { parseAsync } from "json2csv";
 import exceljs from "exceljs";
-import { Document, Packer, Paragraph } from "docx";
+import { Document, Packer, Paragraph, TextRun } from "docx";
 import path from "path";
 
 export const convertToCSV = async (data) => {
@@ -13,7 +13,7 @@ export const convertToCSV = async (data) => {
   }
 };
 
-export const convertToExcel = async (data) => {
+export const convertToExcel = async (data, filePath) => {
   try {
     const workbook = new exceljs.Workbook();
     const worksheet = workbook.addWorksheet("Translations");
@@ -24,7 +24,6 @@ export const convertToExcel = async (data) => {
     ];
 
     data.forEach((entry) => worksheet.addRow(entry));
-    const filePath = path.join(__dirname, "output.xlsx");
     await workbook.xlsx.writeFile(filePath);
     return filePath;
   } catch (error) {
@@ -33,19 +32,25 @@ export const convertToExcel = async (data) => {
   }
 };
 
-export const convertToWord = async (data) => {
+export const convertToWord = async (data, filePath) => {
   try {
     const doc = new Document({
       sections: [
         {
           children: data.map(
             (entry) =>
-              new Paragraph(`${entry.id}: ${entry.source} -> ${entry.target}`)
+              new Paragraph({
+                children: [
+                  new TextRun({
+                    text: `${entry.id}: ${entry.source} -> ${entry.target}`,
+                    break: 1,
+                  }),
+                ],
+              })
           ),
         },
       ],
     });
-    const filePath = path.join("uploads", "output.docx");
     const buffer = await Packer.toBuffer(doc);
     fs.writeFileSync(filePath, buffer);
     return filePath;

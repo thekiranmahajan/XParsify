@@ -36,11 +36,14 @@ const FileUpload = ({ onFilesSelected }) => {
   };
 
   const updateFileList = (newFiles) => {
-    const validFiles = newFiles.filter((file) =>
-      [".xlf", ".docx"].some((ext) => file.name.endsWith(ext))
-    );
-    setFiles((prevFiles) => [...prevFiles, ...validFiles]);
-    onFilesSelected([...files, ...validFiles]);
+    setFiles((prevFiles) => {
+      const validFiles = newFiles.filter((file) =>
+        [".xlf", ".docx"].some((ext) => file.name.endsWith(ext))
+      );
+      const updatedFiles = [...prevFiles, ...validFiles];
+      onFilesSelected(updatedFiles);
+      return updatedFiles;
+    });
   };
 
   const removeFile = (index) => {
