@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { TbDragDrop } from "react-icons/tb";
-import { RiDeleteBin2Line } from "react-icons/ri";
+import SelectedFiles from "./SelectedFiles";
 
 const FileUpload = ({ onFilesSelected }) => {
   const [files, setFiles] = useState([]);
@@ -19,20 +19,28 @@ const FileUpload = ({ onFilesSelected }) => {
     event.preventDefault();
     setIsDragging(false);
     const droppedFiles = Array.from(event.dataTransfer.files);
-    updateFileList(droppedFiles);
+    if (droppedFiles.length + files.length <= 5) {
+      updateFileList(droppedFiles);
+    } else {
+      alert("You can only upload up to 5 files at a time.");
+    }
   };
 
   const handleFileSelect = (event) => {
     const selectedFiles = Array.from(event.target.files);
-    updateFileList(selectedFiles);
+    if (selectedFiles.length + files.length <= 5) {
+      updateFileList(selectedFiles);
+    } else {
+      alert("You can only upload up to 5 files at a time.");
+    }
   };
 
   const updateFileList = (newFiles) => {
     const validFiles = newFiles.filter((file) =>
       [".xlf", ".docx"].some((ext) => file.name.endsWith(ext))
     );
-    setFiles(validFiles);
-    onFilesSelected(validFiles);
+    setFiles((prevFiles) => [...prevFiles, ...validFiles]);
+    onFilesSelected([...files, ...validFiles]);
   };
 
   const removeFile = (index) => {
@@ -40,6 +48,20 @@ const FileUpload = ({ onFilesSelected }) => {
     setFiles(newFiles);
     onFilesSelected(newFiles);
   };
+
+  const handleConvertAll = (formats) => {
+    // Logic to handle batch conversion and download
+  };
+
+  if (files.length > 0) {
+    return (
+      <SelectedFiles
+        files={files}
+        onRemoveFile={removeFile}
+        onConvertAll={handleConvertAll}
+      />
+    );
+  }
 
   return (
     <div
@@ -66,27 +88,6 @@ const FileUpload = ({ onFilesSelected }) => {
         <span className="text-lg font-semibold">Drag & Drop files here</span>
         <span className="text-sm text-gray-500 mt-1">or click to upload</span>
       </div>
-      {files.length > 0 && (
-        <div className="mt-4 w-full">
-          {files.map((file, index) => (
-            <div
-              key={index}
-              className="flex justify-between items-center bg-base-100 p-2 rounded-md shadow-sm mb-2"
-            >
-              <span className="text-sm">{file.name}</span>
-              <button
-                className="btn btn-xs btn-error"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  removeFile(index);
-                }}
-              >
-                <RiDeleteBin2Line className="size-4"/>
-              </button>
-            </div>
-          ))}
-        </div>
-      )}
     </div>
   );
 };

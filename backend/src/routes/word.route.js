@@ -5,6 +5,6 @@ import { parseWord } from "../controllers/word.controller.js";
 const router = express.Router();
 const upload = multer({ dest: "uploads/" });
 
-router.post("/", upload.single("file"), parseWord);
+router.post("/", upload.array("files", 5), parseWord);
 
 export default router;
