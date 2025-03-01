@@ -1,0 +1,25 @@
+{
+  "name": "xparsify",
+  "version": "1.0.0",
+  "description": "A web-based tool to parse XLF and Storyline transcripts, converting them into various formats like JSON, CSV, Excel, and Word.",
+  "author": "Kiran Mahajan",
+  "license": "MIT",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "dev": "node --watch index.js"
+  },
+  "keywords": [
+    "XLF",
+    "Parser",
+    "Storyline",
+    "Transcript",
+    "Export",
+    "React",
+    "Node.js",
+    "JSON",
+    "CSV",
+    "Excel",
+    "Word"
+  ]
+}
