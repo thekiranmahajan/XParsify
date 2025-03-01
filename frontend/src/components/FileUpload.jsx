@@ -1,4 +1,6 @@
 import { useState } from "react";
+import { TbDragDrop } from "react-icons/tb";
+import { RiDeleteBin2Line } from "react-icons/ri";
 
 const FileUpload = ({ onFilesSelected }) => {
   const [files, setFiles] = useState([]);
@@ -41,7 +43,7 @@ const FileUpload = ({ onFilesSelected }) => {
 
   return (
     <div
-      className={`p-6 border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-center cursor-pointer transition-all ${
+      className={`p-6 border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-center cursor-pointer transition-all select-none w-3xl h-60  ${
         isDragging
           ? "border-primary bg-primary/10"
           : "border-gray-300 bg-base-200 hover:bg-base-300"
@@ -60,6 +62,7 @@ const FileUpload = ({ onFilesSelected }) => {
         onChange={handleFileSelect}
       />
       <div className="flex flex-col items-center">
+        <TbDragDrop className="size-10 mb-2" />
         <span className="text-lg font-semibold">Drag & Drop files here</span>
         <span className="text-sm text-gray-500 mt-1">or click to upload</span>
       </div>
@@ -78,7 +81,7 @@ const FileUpload = ({ onFilesSelected }) => {
                   removeFile(index);
                 }}
               >
-                ❌
+                <RiDeleteBin2Line className="size-4"/>
               </button>
             </div>
           ))}
