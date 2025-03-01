@@ -5,6 +5,7 @@
   "author": "Kiran Mahajan",
   "license": "MIT",
   "main": "index.js",
+  "type": "module",
   "scripts": {
     "start": "node index.js",
     "dev": "node --env-file=.env --watch src/index.js"
