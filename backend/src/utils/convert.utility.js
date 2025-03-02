@@ -7,6 +7,14 @@ import { Document, Packer, Paragraph, TextRun } from "docx";
 import { parseXLF, parseWordFile } from "./file.utility.js";
 import { convertedDir } from "./dirname.js";
 
+const formatExtensions = {
+  TEXT: "txt",
+  CSV: "csv",
+  JSON: "json",
+  EXCEL: "xlsx",
+  WORD: "docx",
+};
+
 export const convertToCSV = async (data) => {
   try {
     return await parseAsync(data, { fields: ["id", "source", "target"] });
@@ -82,9 +90,14 @@ export const createZipArchive = async (files) => {
 
 export const convertFile = async (file, format) => {
   try {
+    const extension = formatExtensions[format.toUpperCase()];
+    if (!extension) {
+      throw new Error(`Unsupported format: ${format}`);
+    }
+
     const outputPath = path.join(
       convertedDir,
-      `${path.parse(file.originalname).name}.${format.toLowerCase()}`
+      `${path.parse(file.originalname).name}.${extension}`
     );
 
     console.log("Processing file:", file.originalname);

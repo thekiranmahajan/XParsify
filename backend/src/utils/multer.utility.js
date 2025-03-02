@@ -3,7 +3,6 @@ import path from "path";
 import fs from "fs";
 import { __dirname, uploadsDir, convertedDir } from "./dirname.js";
 
-// Create directories if they don't exist
 [uploadsDir, convertedDir].forEach((dir) => {
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
@@ -13,7 +12,7 @@ import { __dirname, uploadsDir, convertedDir } from "./dirname.js";
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, uploadsDir),
   filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname); // Preserve extension
+    const ext = path.extname(file.originalname);
     const uniqueSuffix = `${Date.now()}-${Math.round(
       Math.random() * 1e9
     )}${ext}`;
@@ -34,6 +33,6 @@ export const upload = multer({
   storage,
   fileFilter,
   limits: {
-    fileSize: 10 * 1024 * 1024, // 10MB
+    fileSize: 10 * 1024 * 1024,
   },
 });
