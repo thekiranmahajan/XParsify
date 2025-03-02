@@ -3,17 +3,104 @@ import xml2js from "xml2js";
 import mammoth from "mammoth";
 import path from "path";
 import { __dirname, convertedDir } from "./dirname.js";
+import { Document, Packer, Paragraph, TextRun } from "docx";
 
 export const parseXLF = async (filePath) => {
   const data = await fs.readFile(filePath, "utf-8");
   const parser = new xml2js.Parser();
   const jsonData = await parser.parseStringPromise(data);
 
-  return jsonData.xliff.file[0].body[0]["trans-unit"].map((unit) => ({
-    id: unit.$.id,
-    source: unit.source[0],
-    target: unit.target ? unit.target[0] : "NA",
+  const extractedTexts = jsonData.xliff.file.flatMap((file) =>
+    file.body[0]["trans-unit"].map((unit) => ({
+      id: unit.$.id,
+      source: extractText(unit.source[0]),
+      target: unit.target ? extractText(unit.target[0]) : "",
+    }))
+  );
+
+  return extractedTexts;
+};
+
+const extractText = (source) => {
+  if (typeof source === "string") {
+    return source;
+  } else if (source.g) {
+    return source.g.map((g) => g._).join(" ");
+  }
+  return "";
+};
+
+export const convertXLFToWord = async (filePath, outputDocx) => {
+  const extractedTexts = await parseXLF(filePath);
+
+  const doc = new Document({
+    sections: [
+      {
+        children: extractedTexts.map(
+          (entry) =>
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: `ID: ${entry.id}`,
+                  bold: true,
+                }),
+                new TextRun({
+                  text: `\nSource: ${entry.source}`,
+                  break: 1,
+                }),
+                new TextRun({
+                  text: `\nTarget: ${entry.target}`,
+                  break: 1,
+                }),
+              ],
+            })
+        ),
+      },
+    ],
+  });
+
+  const buffer = await Packer.toBuffer(doc);
+  await fs.writeFile(outputDocx, buffer);
+};
+
+export const cleanJsonData = (jsonData) => {
+  return jsonData.map((item) => ({
+    source: item.source,
+    target: item.target,
   }));
+};
+
+export const convertJsonToWord = async (jsonData, outputDocx) => {
+  const cleanedData = cleanJsonData(jsonData);
+
+  const doc = new Document({
+    sections: [
+      {
+        children: cleanedData.map(
+          (entry) =>
+            new Paragraph({
+              children: [
+                new TextRun({
+                  text: `ID: ${entry.id}`,
+                  bold: true,
+                }),
+                new TextRun({
+                  text: `\nSource: ${entry.source}`,
+                  break: 1,
+                }),
+                new TextRun({
+                  text: `\nTarget: ${entry.target}`,
+                  break: 1,
+                }),
+              ],
+            })
+        ),
+      },
+    ],
+  });
+
+  const buffer = await Packer.toBuffer(doc);
+  await fs.writeFile(outputDocx, buffer);
 };
 
 export const parseWordFile = async (filePath) => {

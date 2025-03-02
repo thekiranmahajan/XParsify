@@ -4,7 +4,12 @@ import archiver from "archiver";
 import { parseAsync } from "json2csv";
 import ExcelJS from "exceljs";
 import { Document, Packer, Paragraph, TextRun } from "docx";
-import { parseXLF, parseWordFile } from "./file.utility.js";
+import {
+  parseXLF,
+  parseWordFile,
+  convertXLFToWord,
+  cleanJsonData,
+} from "./file.utility.js";
 import { convertedDir } from "./dirname.js";
 
 const formatExtensions = {
@@ -17,7 +22,13 @@ const formatExtensions = {
 
 export const convertToCSV = async (data) => {
   try {
-    return await parseAsync(data, { fields: ["id", "source", "target"] });
+    const filteredData = data.map((entry) => {
+      const result = {};
+      if (entry.source) result.source = entry.source;
+      if (entry.target) result.target = entry.target;
+      return result;
+    });
+    return await parseAsync(filteredData, { fields: ["source", "target"] });
   } catch (error) {
     console.error("Error converting to CSV:", error);
     throw error;
@@ -29,7 +40,6 @@ export const convertToExcel = async (data, filePath) => {
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Translations");
     worksheet.columns = [
-      { header: "ID", key: "id", width: 10 },
       { header: "Source", key: "source", width: 30 },
       { header: "Target", key: "target", width: 30 },
     ];
@@ -48,17 +58,26 @@ export const convertToWord = async (data, filePath) => {
     const doc = new Document({
       sections: [
         {
-          children: data.map(
-            (entry) =>
-              new Paragraph({
-                children: [
-                  new TextRun({
-                    text: `${entry.id}: ${entry.source} -> ${entry.target}`,
-                    break: 1,
-                  }),
-                ],
-              })
-          ),
+          children: data.map((entry) => {
+            const children = [];
+            if (entry.source) {
+              children.push(
+                new TextRun({
+                  text: `${entry.source}`,
+                  break: 1,
+                })
+              );
+            }
+            if (entry.target) {
+              children.push(
+                new TextRun({
+                  text: `${entry.target}`,
+                  break: 1,
+                })
+              );
+            }
+            return new Paragraph({ children });
+          }),
         },
       ],
     });
@@ -67,6 +86,24 @@ export const convertToWord = async (data, filePath) => {
     return filePath;
   } catch (error) {
     console.error("Error converting to Word:", error);
+    throw error;
+  }
+};
+
+export const convertToText = async (data, filePath) => {
+  try {
+    const textContent = data
+      .map((entry) => {
+        let result = "";
+        if (entry.source) result += `${entry.source}\n`;
+        if (entry.target) result += `${entry.target}\n`;
+        return result.trim();
+      })
+      .join("\n\n");
+    await fs.promises.writeFile(filePath, textContent);
+    return filePath;
+  } catch (error) {
+    console.error("Error converting to Text:", error);
     throw error;
   }
 };
@@ -106,27 +143,31 @@ export const convertFile = async (file, format) => {
 
     let fileContent;
     try {
-      fileContent = file.originalname.endsWith(".xlf")
-        ? await parseXLF(file.path)
-        : await parseWordFile(file.path);
+      if (file.originalname.endsWith(".xlf")) {
+        if (format.toUpperCase() === "WORD") {
+          await convertXLFToWord(file.path, outputPath);
+          return outputPath;
+        } else {
+          fileContent = await parseXLF(file.path);
+        }
+      } else {
+        fileContent = await parseWordFile(file.path);
+      }
     } catch (error) {
       console.error("Error parsing file:", error);
       throw new Error(`Failed to parse file: ${error.message}`);
     }
 
+    const cleanedData = cleanJsonData(fileContent);
+
     let result;
     switch (format.toUpperCase()) {
       case "TEXT":
-        const textContent =
-          typeof fileContent === "string"
-            ? fileContent
-            : JSON.stringify(fileContent, null, 2);
-        await fs.promises.writeFile(outputPath, textContent);
-        result = outputPath;
+        result = await convertToText(cleanedData, outputPath);
         break;
 
       case "CSV":
-        const csvContent = await convertToCSV(fileContent);
+        const csvContent = await convertToCSV(cleanedData);
         await fs.promises.writeFile(outputPath, csvContent);
         result = outputPath;
         break;
@@ -134,17 +175,17 @@ export const convertFile = async (file, format) => {
       case "JSON":
         await fs.promises.writeFile(
           outputPath,
-          JSON.stringify(fileContent, null, 2)
+          JSON.stringify(cleanedData, null, 2)
         );
         result = outputPath;
         break;
 
       case "EXCEL":
-        result = await convertToExcel(fileContent, outputPath);
+        result = await convertToExcel(cleanedData, outputPath);
         break;
 
       case "WORD":
-        result = await convertToWord(fileContent, outputPath);
+        result = await convertToWord(cleanedData, outputPath);
         break;
 
       default:
