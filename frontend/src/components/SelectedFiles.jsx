@@ -4,7 +4,11 @@ import {
   RiFileTransferLine,
   RiDownloadLine,
 } from "react-icons/ri";
-import { XLF_CONVERSIONS, WORD_CONVERSIONS } from "../utils/constants";
+import {
+  XLF_CONVERSIONS,
+  WORD_CONVERSIONS,
+  BACKEND_BASE_URL,
+} from "../utils/constants";
 import axiosInstance from "../utils/axiosInstance";
 import toast from "react-hot-toast";
 
@@ -13,6 +17,7 @@ const SelectedFiles = ({ files, onRemoveFile }) => {
     files.map(() => "")
   );
   const [convertedFiles, setConvertedFiles] = useState([]);
+  const [isConverting, setIsConverting] = useState(false);
 
   const handleFormatChange = (index, format) => {
     const newFormats = [...conversionFormats];
@@ -21,30 +26,49 @@ const SelectedFiles = ({ files, onRemoveFile }) => {
   };
 
   const handleConvert = async (index = null) => {
+    setIsConverting(true);
     const formData = new FormData();
-    const targetFiles = index !== null ? [files[index]] : files;
-    targetFiles.forEach((file, idx) => {
-      formData.append("files", file);
-      formData.append(
-        "format",
-        conversionFormats[index !== null ? index : idx]
-      );
-    });
 
-    try {
-      console.log(`Converting ${index !== null ? "file" : "all files"}`);
-      const response = await axiosInstance.post(
-        `/${files[0].name.endsWith(".xlf") ? "xlf" : "word"}`,
-        formData
-      );
-      console.log("Conversion response:", response.data);
-      setConvertedFiles((prev) => [...prev, ...response.data.results]);
-      toast.success("Files converted successfully!");
-    } catch (error) {
-      console.error("Error converting files:", error);
-      console.error("Error response:", error.response);
-      toast.error("Error converting files.");
+    if (index !== null) {
+      formData.append("file", files[index]);
+      formData.append("format", conversionFormats[index]);
+
+      try {
+        const response = await axiosInstance.post("/api/convert", formData);
+        if (response.data.result?.downloadUrl) {
+          setConvertedFiles((prev) => [
+            ...prev,
+            {
+              file: files[index].name,
+              downloadUrl: response.data.result.downloadUrl,
+            },
+          ]);
+        }
+        toast.success("File converted successfully!");
+      } catch (error) {
+        toast.error("Error converting file");
+      }
+    } else {
+      // Batch conversion
+      files.forEach((file, idx) => {
+        formData.append("files", file);
+      });
+      formData.append("formats", conversionFormats.join(","));
+
+      try {
+        const response = await axiosInstance.post(
+          "/api/convert-batch",
+          formData
+        );
+        if (response.data.convertedFiles) {
+          setConvertedFiles(response.data.convertedFiles);
+        }
+        toast.success("Files converted successfully!");
+      } catch (error) {
+        toast.error("Error converting files");
+      }
     }
+    setIsConverting(false);
   };
 
   const truncateFileName = (name) => {
@@ -82,7 +106,7 @@ const SelectedFiles = ({ files, onRemoveFile }) => {
             <button
               className="btn btn-primary btn-xs"
               onClick={() => handleConvert(index)}
-              disabled={!conversionFormats[index]}
+              disabled={!conversionFormats[index] || isConverting}
             >
               <RiFileTransferLine />
             </button>
@@ -93,21 +117,22 @@ const SelectedFiles = ({ files, onRemoveFile }) => {
               <RiDeleteBin2Line className="size-4" />
             </button>
           </div>
-          {convertedFiles.find((f) => f.file === file.name) && (
+          {convertedFiles.map((converted, idx) => (
             <a
-              href={convertedFiles.find((f) => f.file === file.name).filePath}
+              key={idx}
+              href={`${BACKEND_BASE_URL}${converted.downloadUrl}`}
               download
-              className="ml-2"
+              className="btn btn-success btn-xs ml-2"
             >
-              <RiDownloadLine />
+              <RiDownloadLine /> Download
             </a>
-          )}
+          ))}
         </div>
       ))}
       <button
         className="btn btn-primary mt-4 w-56"
         onClick={() => handleConvert()}
-        disabled={conversionFormats.some((format) => !format)}
+        disabled={conversionFormats.some((format) => !format) || isConverting}
       >
         Convert All and Download
       </button>
