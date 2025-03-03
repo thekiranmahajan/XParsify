@@ -1,0 +1,21 @@
+{
+  "name": "xparsify",
+  "version": "1.0.0",
+  "description": "XParsify is a powerful web app that allows users to **convert .XLF and .DOCX files** into various formats like **CSV, JSON, Excel, and Text** with a seamless drag-and-drop experience.",
+  "main": "index.js",
+  "scripts": {
+    "build": "npm install --prefix backend && npm install --prefix frontend && npm run build --prefix frontend",
+    "start": "npm run start --prefix backend"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/thekiranmahajan/XParsify.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/thekiranmahajan/XParsify/issues"
+  },
+  "homepage": "https://github.com/thekiranmahajan/XParsify#readme"
+}

@@ -14,4 +14,14 @@ app.use(cors({ origin: "http://localhost:5173" }));
 app.use(express.json());
 app.use("/api", apiRoutes);
 
+/*********PRODUCTION CODE**********/
+if (process.env.NODE_ENV === "production") {
+  app.use(express.static(path.resolve(__dirname, "../frontend/dist")));
+
+  app.get("*", (req, res) => {
+    res.sendFile(path.resolve(__dirname, "../frontend", "dist", "index.html"));
+  });
+}
+/*********PRODUCTION CODE**********/
+
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
