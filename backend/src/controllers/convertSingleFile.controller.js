@@ -1,4 +1,4 @@
-import { convertFile } from "../utils/convert.utility.js";
+import { convertAndSaveFile } from "../utils/convert.utility.js";
 import { cleanupFiles } from "../utils/file.utility.js";
 import path from "path";
 
@@ -17,7 +17,7 @@ const convertSingleFile = async (req, res) => {
     }
 
     filesToCleanup.push(file.path);
-    const outputPath = await convertFile(file, format);
+    const outputPath = await convertAndSaveFile(file, format);
 
     res.json({
       success: true,

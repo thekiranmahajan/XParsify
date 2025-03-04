@@ -1,5 +1,4 @@
-export const WORD_CONVERSIONS = ["TEXT", "CSV", "JSON", "EXCEL"];
-export const XLF_CONVERSIONS = ["TEXT", "CSV", "JSON", "EXCEL", "WORD"];
+export const FORMATS = ["TEXT", "CSV", "JSON", "EXCEL", "WORD"];
 export const MAX_FILES = 5;
 export const ALLOWED_EXTENSIONS = [".xlf", ".docx"];
 

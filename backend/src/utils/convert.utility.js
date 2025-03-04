@@ -4,39 +4,87 @@ import archiver from "archiver";
 import { parseAsync } from "json2csv";
 import ExcelJS from "exceljs";
 import { Document, Packer, Paragraph, TextRun } from "docx";
-import {
-  parseXLF,
-  parseWordFile,
-  convertXLFToWord,
-  cleanJsonData,
-} from "./file.utility.js";
 import { convertedDir } from "./dirname.js";
+import parseXLF from "./parseXLF.utility.js";
+import parseWord from "./parseWord.utility.js";
+import {
+  FORMATS_EXTENSIONS,
+  processExtractedTexts,
+  writeLogToFile,
+} from "./constants.utility.js";
 
-const formatExtensions = {
-  TEXT: "txt",
-  CSV: "csv",
-  JSON: "json",
-  EXCEL: "xlsx",
-  WORD: "docx",
+export const convertXLFToWord = async (filePath, outputPath) => {
+  const extractedTexts = await parseXLF(filePath);
+  console.log(extractedTexts);
+  const filteredTexts = processExtractedTexts(extractedTexts);
+
+  const doc = new Document({
+    sections: [
+      {
+        children: filteredTexts.flatMap((entry) => {
+          const idParts = entry.id.split("|");
+          const lastId = idParts[idParts.length - 1];
+
+          const sourceTextRun =
+            lastId === "title"
+              ? new TextRun({ text: entry.source, bold: true })
+              : new TextRun({ text: entry.source });
+
+          const targetTextRun = entry.target
+            ? new TextRun({ text: entry.target, italics: true })
+            : null;
+
+          const paragraphs = [
+            new Paragraph({
+              children: [sourceTextRun],
+            }),
+          ];
+
+          if (targetTextRun) {
+            paragraphs.push(
+              new Paragraph({
+                children: [targetTextRun],
+              })
+            );
+          }
+
+          paragraphs.push(new Paragraph({ text: "" }));
+
+          return paragraphs;
+        }),
+      },
+    ],
+  });
+
+  const buffer = await Packer.toBuffer(doc);
+  await fs.promises.writeFile(outputPath, buffer);
 };
 
-export const convertToCSV = async (data) => {
+export const convertXLFToCSV = async (filePath, outputPath) => {
   try {
-    const filteredData = data.map((entry) => {
+    const extractedTexts = await parseXLF(filePath);
+    const filteredData = processExtractedTexts(extractedTexts).map((entry) => {
       const result = {};
       if (entry.source) result.source = entry.source;
       if (entry.target) result.target = entry.target;
       return result;
     });
-    return await parseAsync(filteredData, { fields: ["source", "target"] });
+    const csvContent = await parseAsync(filteredData, {
+      fields: ["source", "target"],
+    });
+    await fs.promises.writeFile(outputPath, csvContent);
+    return outputPath;
   } catch (error) {
     console.error("Error converting to CSV:", error);
     throw error;
   }
 };
 
-export const convertToExcel = async (data, filePath) => {
+export const convertXLFToExcel = async (filePath, outputPath) => {
   try {
+    const extractedTexts = await parseXLF(filePath);
+    const filteredData = processExtractedTexts(extractedTexts);
+
     const workbook = new ExcelJS.Workbook();
     const worksheet = workbook.addWorksheet("Translations");
     worksheet.columns = [
@@ -44,55 +92,34 @@ export const convertToExcel = async (data, filePath) => {
       { header: "Target", key: "target", width: 30 },
     ];
 
-    data.forEach((entry) => worksheet.addRow(entry));
-    await workbook.xlsx.writeFile(filePath);
-    return filePath;
+    filteredData.forEach((entry) => worksheet.addRow(entry));
+
+    worksheet.columns.forEach((column) => {
+      let maxLength = 0;
+      column.eachCell({ includeEmpty: true }, (cell) => {
+        const columnLength = cell.value ? cell.value.toString().length : 10;
+        if (columnLength > maxLength) {
+          maxLength = columnLength;
+        }
+      });
+      column.width = maxLength < 10 ? 10 : maxLength;
+      column.alignment = { wrapText: true };
+    });
+
+    await workbook.xlsx.writeFile(outputPath);
+    return outputPath;
   } catch (error) {
     console.error("Error converting to Excel:", error);
     throw error;
   }
 };
 
-export const convertToWord = async (data, filePath) => {
+export const convertXLFToText = async (filePath, outputPath) => {
   try {
-    const doc = new Document({
-      sections: [
-        {
-          children: data.map((entry) => {
-            const children = [];
-            if (entry.source) {
-              children.push(
-                new TextRun({
-                  text: `${entry.source}`,
-                  break: 1,
-                })
-              );
-            }
-            if (entry.target) {
-              children.push(
-                new TextRun({
-                  text: `${entry.target}`,
-                  break: 1,
-                })
-              );
-            }
-            return new Paragraph({ children });
-          }),
-        },
-      ],
-    });
-    const buffer = await Packer.toBuffer(doc);
-    fs.writeFileSync(filePath, buffer);
-    return filePath;
-  } catch (error) {
-    console.error("Error converting to Word:", error);
-    throw error;
-  }
-};
+    const extractedTexts = await parseXLF(filePath);
+    const filteredTexts = processExtractedTexts(extractedTexts);
 
-export const convertToText = async (data, filePath) => {
-  try {
-    const textContent = data
+    const textContent = filteredTexts
       .map((entry) => {
         let result = "";
         if (entry.source) result += `${entry.source}\n`;
@@ -100,10 +127,137 @@ export const convertToText = async (data, filePath) => {
         return result.trim();
       })
       .join("\n\n");
-    await fs.promises.writeFile(filePath, textContent);
-    return filePath;
+
+    await fs.promises.writeFile(outputPath, textContent);
+    return outputPath;
   } catch (error) {
     console.error("Error converting to Text:", error);
+    throw error;
+  }
+};
+
+export const convertXLFToJSON = async (filePath, outputPath) => {
+  try {
+    const extractedTexts = await parseXLF(filePath);
+    const filteredTexts = processExtractedTexts(extractedTexts);
+
+    await fs.promises.writeFile(
+      outputPath,
+      JSON.stringify(filteredTexts, null, 2)
+    );
+    return outputPath;
+  } catch (error) {
+    console.error("Error converting to JSON:", error);
+    throw error;
+  }
+};
+
+export const convertWordToText = async (filePath, outputPath) => {
+  try {
+    const extractedTexts = await parseWord(filePath);
+
+    const textContent = extractedTexts
+      .map((entry) => `${entry.lesson}\n${entry.notes}`)
+      .join("\n\n");
+
+    await fs.promises.writeFile(outputPath, textContent);
+    await writeLogToFile(extractedTexts, "convertWordToText");
+    return outputPath;
+  } catch (error) {
+    console.error("Error converting to Text:", error);
+    throw error;
+  }
+};
+
+export const convertWordToCSV = async (filePath, outputPath) => {
+  try {
+    const extractedTexts = await parseWord(filePath);
+    const csvContent = await parseAsync(extractedTexts, {
+      fields: ["lesson", "notes"],
+    });
+    await fs.promises.writeFile(outputPath, csvContent);
+    await writeLogToFile(extractedTexts, "convertWordToCSV");
+    return outputPath;
+  } catch (error) {
+    console.error("Error converting to CSV:", error);
+    throw error;
+  }
+};
+
+export const convertWordToExcel = async (filePath, outputPath) => {
+  try {
+    const extractedTexts = await parseWord(filePath);
+
+    const workbook = new ExcelJS.Workbook();
+    const worksheet = workbook.addWorksheet("Notes");
+    worksheet.columns = [
+      { header: "Lesson", key: "lesson", width: 30 },
+      { header: "Notes", key: "notes", width: 50 },
+    ];
+
+    extractedTexts.forEach((entry) => worksheet.addRow(entry));
+
+    worksheet.columns.forEach((column) => {
+      let maxLength = 0;
+      column.eachCell({ includeEmpty: true }, (cell) => {
+        const columnLength = cell.value ? cell.value.toString().length : 10;
+        if (columnLength > maxLength) {
+          maxLength = columnLength;
+        }
+      });
+      column.width = maxLength < 10 ? 10 : maxLength;
+      column.alignment = { wrapText: true };
+    });
+
+    await workbook.xlsx.writeFile(outputPath);
+    await writeLogToFile(extractedTexts, "convertWordToExcel");
+    return outputPath;
+  } catch (error) {
+    console.error("Error converting to Excel:", error);
+    throw error;
+  }
+};
+
+export const convertWordToJSON = async (filePath, outputPath) => {
+  try {
+    const extractedTexts = await parseWord(filePath);
+
+    await fs.promises.writeFile(
+      outputPath,
+      JSON.stringify(extractedTexts, null, 2)
+    );
+    await writeLogToFile(extractedTexts, "convertWordToJSON");
+    return outputPath;
+  } catch (error) {
+    console.error("Error converting to JSON:", error);
+    throw error;
+  }
+};
+
+export const convertWordToWord = async (filePath, outputPath) => {
+  try {
+    const extractedTexts = await parseWord(filePath);
+
+    const doc = new Document({
+      sections: [
+        {
+          children: extractedTexts.flatMap((entry) => [
+            new Paragraph({
+              children: [new TextRun({ text: entry.lesson, bold: true })],
+            }),
+            new Paragraph({ text: entry.notes }),
+            new Paragraph({ text: "" }),
+          ]),
+        },
+      ],
+    });
+
+    const buffer = await Packer.toBuffer(doc);
+    await fs.promises.writeFile(outputPath, buffer);
+    await writeLogToFile(extractedTexts, "convertWordToWord");
+    return outputPath;
+  } catch (error) {
+    console.error("Error converting to Word:", error);
     throw error;
   }
 };
@@ -125,9 +279,9 @@ export const createZipArchive = async (files) => {
   });
 };
 
-export const convertFile = async (file, format) => {
+export const convertAndSaveFile = async (file, format) => {
   try {
-    const extension = formatExtensions[format.toUpperCase()];
+    const extension = FORMATS_EXTENSIONS[format.toUpperCase()];
     if (!extension) {
       throw new Error(`Unsupported format: ${format}`);
     }
@@ -141,58 +295,49 @@ export const convertFile = async (file, format) => {
     console.log("Target format:", format);
     console.log("Output path:", outputPath);
 
-    let fileContent;
-    try {
-      if (file.originalname.endsWith(".xlf")) {
-        if (format.toUpperCase() === "WORD") {
+    if (file.originalname.endsWith(".xlf")) {
+      switch (format.toUpperCase()) {
+        case "WORD":
           await convertXLFToWord(file.path, outputPath);
-          return outputPath;
-        } else {
-          fileContent = await parseXLF(file.path);
-        }
-      } else {
-        fileContent = await parseWordFile(file.path);
+          break;
+        case "CSV":
+          await convertXLFToCSV(file.path, outputPath);
+          break;
+        case "EXCEL":
+          await convertXLFToExcel(file.path, outputPath);
+          break;
+        case "TEXT":
+          await convertXLFToText(file.path, outputPath);
+          break;
+        case "JSON":
+          await convertXLFToJSON(file.path, outputPath);
+          break;
+        default:
+          throw new Error(`Unsupported format: ${format}`);
       }
-    } catch (error) {
-      console.error("Error parsing file:", error);
-      throw new Error(`Failed to parse file: ${error.message}`);
+    } else {
+      switch (format.toUpperCase()) {
+        case "WORD":
+          await convertWordToWord(file.path, outputPath);
+          break;
+        case "CSV":
+          await convertWordToCSV(file.path, outputPath);
+          break;
+        case "EXCEL":
+          await convertWordToExcel(file.path, outputPath);
+          break;
+        case "TEXT":
+          await convertWordToText(file.path, outputPath);
+          break;
+        case "JSON":
+          await convertWordToJSON(file.path, outputPath);
+          break;
+        default:
+          throw new Error(`Unsupported format: ${format}`);
+      }
     }
 
-    const cleanedData = cleanJsonData(fileContent);
-
-    let result;
-    switch (format.toUpperCase()) {
-      case "TEXT":
-        result = await convertToText(cleanedData, outputPath);
-        break;
-
-      case "CSV":
-        const csvContent = await convertToCSV(cleanedData);
-        await fs.promises.writeFile(outputPath, csvContent);
-        result = outputPath;
-        break;
-
-      case "JSON":
-        await fs.promises.writeFile(
-          outputPath,
-          JSON.stringify(cleanedData, null, 2)
-        );
-        result = outputPath;
-        break;
-
-      case "EXCEL":
-        result = await convertToExcel(cleanedData, outputPath);
-        break;
-
-      case "WORD":
-        result = await convertToWord(cleanedData, outputPath);
-        break;
-
-      default:
-        throw new Error(`Unsupported format: ${format}`);
-    }
-
-    return result;
+    return outputPath;
   } catch (error) {
     console.error("Conversion error:", error);
     throw error;

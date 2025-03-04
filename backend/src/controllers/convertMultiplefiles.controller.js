@@ -1,4 +1,7 @@
-import { convertFile } from "../utils/convert.utility.js";
+import {
+  convertAndSaveFile,
+  createZipArchive,
+} from "../utils/convert.utility.js";
 import { cleanupFiles } from "../utils/file.utility.js";
 import path from "path";
 
@@ -19,15 +22,17 @@ const convertMultipleFiles = async (req, res) => {
     req.files.forEach((f) => filesToCleanup.push(f.path));
 
     const convertedFiles = await Promise.all(
-      req.files.map((file, i) => convertFile(file, formats[i]))
+      req.files.map((file, i) => convertAndSaveFile(file, formats[i]))
     );
 
-    const fileResponses = convertedFiles.map((filePath, index) => ({
-      fileName: req.files[index].originalname,
-      downloadUrl: `/api/files/${path.basename(filePath)}`,
-    }));
+    const zipFilePath = await createZipArchive(
+      convertedFiles.map((filePath) => ({ path: filePath }))
+    );
 
-    res.json({ success: true, convertedFiles: fileResponses });
+    res.json({
+      success: true,
+      downloadUrl: `/api/files/${path.basename(zipFilePath)}`,
+    });
   } catch (error) {
     res
       .status(500)
@@ -36,4 +41,5 @@ const convertMultipleFiles = async (req, res) => {
     await cleanupFiles(filesToCleanup);
   }
 };
+
 export default convertMultipleFiles;

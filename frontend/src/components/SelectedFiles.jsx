@@ -4,11 +4,7 @@ import {
   RiFileTransferLine,
   RiDownloadLine,
 } from "react-icons/ri";
-import {
-  XLF_CONVERSIONS,
-  WORD_CONVERSIONS,
-  BACKEND_BASE_URL,
-} from "../utils/constants";
+import { BACKEND_BASE_URL, FORMATS } from "../utils/constants";
 import axiosInstance from "../utils/axiosInstance";
 import toast from "react-hot-toast";
 
@@ -46,7 +42,6 @@ const SelectedFiles = ({ files, onRemoveFile }) => {
         toast.error("Error converting file");
       }
     } else {
-      // Batch conversion
       files.forEach((file, idx) => {
         formData.append("files", file);
       });
@@ -88,10 +83,7 @@ const SelectedFiles = ({ files, onRemoveFile }) => {
               <option value="" disabled>
                 Select format
               </option>
-              {(file.name.endsWith(".xlf")
-                ? XLF_CONVERSIONS
-                : WORD_CONVERSIONS
-              ).map((format, idx) => (
+              {FORMATS.map((format, idx) => (
                 <option key={idx} value={format}>
                   {format}
                 </option>
