@@ -1,5 +1,5 @@
 import { fileURLToPath } from "url";
-import { dirname, join } from "path";
+import { dirname, join, resolve } from "path";
 import fs from "fs";
 
 export const __dirname = dirname(dirname(fileURLToPath(import.meta.url)));
@@ -11,3 +11,5 @@ export const convertedDir = join(__dirname, "converted");
     fs.mkdirSync(dir, { recursive: true });
   }
 });
+export const rootDir = dirname(backendDir);
+export const frontendDistDir = resolve(rootDir, "frontend", "dist");
