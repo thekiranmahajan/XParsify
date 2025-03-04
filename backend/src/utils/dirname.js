@@ -6,11 +6,8 @@ const __filename = fileURLToPath(import.meta.url);
 export const __dirname = dirname(__filename);
 
 export const backendSrcDir = __dirname;
-
 export const backendDir = dirname(backendSrcDir);
-
 export const rootDir = dirname(backendDir);
-
 export const frontendDistDir = resolve(rootDir, "frontend", "dist");
 
 export const uploadsDir = join(backendSrcDir, "uploads");
