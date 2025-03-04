@@ -20,7 +20,7 @@ export const processExtractedTexts = (extractedTexts) => {
 
 export const writeLogToFile = async (logData, logType) => {
   const logFilePath = path.join(backendSrcDir, `logs/${logType}.log`);
-  await fs.promises.appendFile(
+  await fs.promises.writeFile(
     logFilePath,
     JSON.stringify(logData, null, 2) + "\n"
   );
