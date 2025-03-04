@@ -9,10 +9,7 @@ const PORT = process.env.PORT || 5000;
 
 app.use("/api/files", express.static(convertedDir));
 
-const allowedOrigins = [
-  "http://localhost:5173",
-  "https://xparsify.onrender.com",
-];
+const allowedOrigins = ["http://localhost:5173"];
 
 app.use(
   cors({
