@@ -16,7 +16,7 @@ const SelectedFiles = ({ files, onRemoveFile }) => {
   const [conversionFormats, setConversionFormats] = useState(
     files.map(() => "")
   );
-  const [convertedFiles, setConvertedFiles] = useState([]);
+  const [convertedFiles, setConvertedFiles] = useState({});
   const [isConverting, setIsConverting] = useState(false);
 
   const handleFormatChange = (index, format) => {
@@ -36,13 +36,10 @@ const SelectedFiles = ({ files, onRemoveFile }) => {
       try {
         const response = await axiosInstance.post("/api/convert", formData);
         if (response.data.result?.downloadUrl) {
-          setConvertedFiles((prev) => [
+          setConvertedFiles((prev) => ({
             ...prev,
-            {
-              file: files[index].name,
-              downloadUrl: response.data.result.downloadUrl,
-            },
-          ]);
+            [index]: response.data.result.downloadUrl,
+          }));
         }
         toast.success("File converted successfully!");
       } catch (error) {
@@ -116,26 +113,31 @@ const SelectedFiles = ({ files, onRemoveFile }) => {
             >
               <RiDeleteBin2Line className="size-4" />
             </button>
+            {convertedFiles[index] && (
+              <a
+                href={`${BACKEND_BASE_URL}${convertedFiles[index]}`}
+                download={
+                  files[index].name.replace(/\.[^/.]+$/, "") +
+                  "." +
+                  conversionFormats[index]
+                }
+                className="btn btn-success btn-xs"
+              >
+                <RiDownloadLine />
+              </a>
+            )}
           </div>
-          {convertedFiles.map((converted, idx) => (
-            <a
-              key={idx}
-              href={`${BACKEND_BASE_URL}${converted.downloadUrl}`}
-              download
-              className="btn btn-success btn-xs ml-2"
-            >
-              <RiDownloadLine /> Download
-            </a>
-          ))}
         </div>
       ))}
-      <button
-        className="btn btn-primary mt-4 w-56"
-        onClick={() => handleConvert()}
-        disabled={conversionFormats.some((format) => !format) || isConverting}
-      >
-        Convert All and Download
-      </button>
+      {files.length > 1 && (
+        <button
+          className="btn btn-primary mt-4 w-56"
+          onClick={() => handleConvert()}
+          disabled={conversionFormats.some((format) => !format) || isConverting}
+        >
+          Convert All and Download
+        </button>
+      )}
     </div>
   );
 };
