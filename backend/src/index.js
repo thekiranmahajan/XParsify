@@ -10,7 +10,17 @@ const PORT = process.env.PORT || 5000;
 // Serve static files with /api prefix
 app.use("/api/files", express.static(path.join(__dirname, "converted")));
 
-app.use(cors({ origin: "http://localhost:5173" }));
+const allowedOrigins = [
+  "http://localhost:5173",
+  "https://xparsify.onrender.com",
+];
+
+app.use(
+  cors({
+    origin: allowedOrigins,
+  })
+);
+
 app.use(express.json());
 app.use("/api", apiRoutes);
 
@@ -24,4 +34,4 @@ if (process.env.NODE_ENV === "production") {
 }
 /*********PRODUCTION CODE**********/
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+app.listen(PORT, () => console.log(`Server running on  ${PORT}`));
