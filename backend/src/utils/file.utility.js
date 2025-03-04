@@ -5,56 +5,99 @@ import path from "path";
 import { __dirname, convertedDir } from "./dirname.js";
 import { Document, Packer, Paragraph, TextRun } from "docx";
 
+const writeLogToFile = async (logData, logType) => {
+  const timestamp = new Date().toISOString().replace(/[:.]/g, "-");
+  const logFilePath = path.join(__dirname, `logs/${logType}-${timestamp}.log`);
+  await fs.writeFile(logFilePath, JSON.stringify(logData, null, 2));
+};
+
+const cleanText = (text) =>
+  text
+    .replace(/(\r\n|\n|\r)/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+const extractTextRecursive = (node) => {
+  if (!node) return "";
+  if (typeof node === "string") return node.trim();
+  if (Array.isArray(node))
+    return node.map(extractTextRecursive).join(" ").trim();
+  if (typeof node === "object") {
+    const texts = [];
+    if (node._) texts.push(node._.trim());
+    for (const key of Object.keys(node)) {
+      if (key !== "$" && key !== "_") {
+        texts.push(extractTextRecursive(node[key]));
+      }
+    }
+    return texts.join(" ").trim();
+  }
+  return "";
+};
+
 export const parseXLF = async (filePath) => {
   const data = await fs.readFile(filePath, "utf-8");
   const parser = new xml2js.Parser();
   const jsonData = await parser.parseStringPromise(data);
 
-  const extractedTexts = jsonData.xliff.file.flatMap((file) =>
-    file.body[0]["trans-unit"].map((unit) => ({
-      id: unit.$.id,
-      source: extractText(unit.source[0]),
-      target: unit.target ? extractText(unit.target[0]) : "",
-    }))
+  // await writeLogToFile(jsonData, "ParsedJSONData");
+
+  const transUnits = jsonData.xliff.file.flatMap(
+    (file) => file.body[0]["trans-unit"]
   );
+  // await writeLogToFile(transUnits, "TransUnits");
+
+  const filteredUnits = transUnits.filter(
+    (unit) => !unit.$.id.includes("caption") && !unit.$.id.includes("alt")
+  );
+  // await writeLogToFile(filteredUnits, "FilteredUnits");
+
+  const extractedTexts = filteredUnits
+    .map((unit) => {
+      const sourceText = cleanText(extractTextRecursive(unit.source));
+      const targetText = unit.target
+        ? cleanText(extractTextRecursive(unit.target))
+        : "";
+
+      return {
+        id: unit.$.id,
+        source: sourceText,
+        target: targetText,
+      };
+    })
+    .filter((unit) => unit.source.length > 0);
+
+  // await writeLogToFile(extractedTexts, "ExtractedTexts");
 
   return extractedTexts;
-};
-
-const extractText = (source) => {
-  if (typeof source === "string") {
-    return source;
-  } else if (source.g) {
-    return source.g.map((g) => g._).join(" ");
-  }
-  return "";
 };
 
 export const convertXLFToWord = async (filePath, outputDocx) => {
   const extractedTexts = await parseXLF(filePath);
 
+  const filteredTexts = extractedTexts.filter(
+    (entry) => entry.source && entry.source.trim().length > 0
+  );
+
   const doc = new Document({
     sections: [
       {
-        children: extractedTexts.map(
-          (entry) =>
+        children: filteredTexts.flatMap((entry) => {
+          const idParts = entry.id.split("|");
+          const lastId = idParts[idParts.length - 1];
+
+          const sourceTextRun =
+            lastId === "title"
+              ? new TextRun({ text: entry.source, bold: true })
+              : new TextRun({ text: entry.source });
+
+          return [
             new Paragraph({
-              children: [
-                new TextRun({
-                  text: `ID: ${entry.id}`,
-                  bold: true,
-                }),
-                new TextRun({
-                  text: `\nSource: ${entry.source}`,
-                  break: 1,
-                }),
-                new TextRun({
-                  text: `\nTarget: ${entry.target}`,
-                  break: 1,
-                }),
-              ],
-            })
-        ),
+              children: [sourceTextRun],
+            }),
+            new Paragraph({ text: "" }),
+          ];
+        }),
       },
     ],
   });

@@ -158,6 +158,8 @@ export const convertFile = async (file, format) => {
       throw new Error(`Failed to parse file: ${error.message}`);
     }
 
+    console.log("File Content:", JSON.stringify(fileContent, null, 2));
+
     const cleanedData = cleanJsonData(fileContent);
 
     let result;
