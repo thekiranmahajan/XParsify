@@ -34,7 +34,7 @@ const SelectedFiles = ({ files, onRemoveFile }) => {
       formData.append("format", conversionFormats[index]);
 
       try {
-        const response = await axiosInstance.post("/api/convert", formData);
+        const response = await axiosInstance.post("/convert", formData);
         if (response.data.result?.downloadUrl) {
           setConvertedFiles((prev) => ({
             ...prev,
@@ -53,10 +53,7 @@ const SelectedFiles = ({ files, onRemoveFile }) => {
       formData.append("formats", conversionFormats.join(","));
 
       try {
-        const response = await axiosInstance.post(
-          "/api/convert-batch",
-          formData
-        );
+        const response = await axiosInstance.post("/convert-batch", formData);
         if (response.data.convertedFiles) {
           setConvertedFiles(response.data.convertedFiles);
         }

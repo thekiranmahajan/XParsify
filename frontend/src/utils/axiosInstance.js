@@ -2,7 +2,8 @@ import axios from "axios";
 import { BACKEND_BASE_URL } from "./constants";
 
 const axiosInstance = axios.create({
-  baseURL: BACKEND_BASE_URL,
+  baseURL:
+    import.meta.env.MODE === "development" ? `${BACKEND_BASE_URL}/api` : "/api",
   headers: {
     "Content-Type": "multipart/form-data",
   },
