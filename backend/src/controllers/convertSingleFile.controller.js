@@ -19,11 +19,12 @@ const convertSingleFile = async (req, res) => {
     filesToCleanup.push(file.path);
     const outputPath = await convertAndSaveFile(file, format);
 
+    const protocol = req.secure ? "https" : "http";
     res.json({
       success: true,
       result: {
         fileName: file.originalname,
-        downloadUrl: `${req.protocol}://${req.get(
+        downloadUrl: `${protocol}://${req.get(
           "host"
         )}/api/files/${path.basename(outputPath)}`,
       },

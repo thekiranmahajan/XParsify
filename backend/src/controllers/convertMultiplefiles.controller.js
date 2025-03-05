@@ -29,11 +29,12 @@ const convertMultipleFiles = async (req, res) => {
       convertedFiles.map((filePath) => ({ path: filePath }))
     );
 
+    const protocol = req.secure ? "https" : "http";
     res.json({
       success: true,
-      downloadUrl: `${req.protocol}://${req.get(
-        "host"
-      )}/api/files/${path.basename(zipFilePath)}`,
+      downloadUrl: `${protocol}://${req.get("host")}/api/files/${path.basename(
+        zipFilePath
+      )}`,
     });
   } catch (error) {
     console.error("Batch conversion error:", error);
