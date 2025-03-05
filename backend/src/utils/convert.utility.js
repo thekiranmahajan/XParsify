@@ -15,7 +15,7 @@ import {
 
 export const convertXLFToWord = async (filePath, outputPath) => {
   const extractedTexts = await parseXLF(filePath);
-  console.log(extractedTexts);
+  // console.log(extractedTexts);
   const filteredTexts = processExtractedTexts(extractedTexts);
   // writeLogToFile(filteredTexts, "convertXLFToWord");
   const doc = new Document({
