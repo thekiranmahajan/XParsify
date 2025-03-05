@@ -1,6 +1,6 @@
 import xml2js from "xml2js";
 import fs from "fs/promises";
-import { EXCLUDE_SENTENCES } from "./constants.utility";
+import { EXCLUDE_SENTENCES } from "./constants.utility.js";
 
 const cleanText = (text) =>
   text
