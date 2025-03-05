@@ -130,7 +130,6 @@ const SelectedFiles = ({ files, onRemoveFile }) => {
             <a
               href={convertedFiles[index]}
               download
-              target="_blank"
               rel="noopener noreferrer"
               className="btn btn-success btn-xs"
               disabled={isDownloadDisabled[index]}

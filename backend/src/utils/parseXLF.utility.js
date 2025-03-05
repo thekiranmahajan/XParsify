@@ -1,5 +1,6 @@
 import xml2js from "xml2js";
 import fs from "fs/promises";
+import { EXCLUDE_SENTENCES } from "./constants.utility";
 
 const cleanText = (text) =>
   text
@@ -23,6 +24,24 @@ const extractTextRecursive = (node) => {
     return texts.join(" ").trim();
   }
   return "";
+};
+
+const filterExcludedSentences = (texts) => {
+  return texts
+    .filter((unit) => !EXCLUDE_SENTENCES.includes(unit.source))
+    .map((unit) => {
+      if (
+        unit.source.includes(
+          "Select START MODULE to begin. Be sure to click on the interactive elements to advance."
+        )
+      ) {
+        unit.source = unit.source.replace(
+          "Select START MODULE to begin. Be sure to click on the interactive elements to advance.",
+          "Select the arrow to continue."
+        );
+      }
+      return unit;
+    });
 };
 
 const parseXLF = async (filePath) => {
@@ -51,6 +70,9 @@ const parseXLF = async (filePath) => {
     })
     .filter((unit) => unit.source.length > 0);
 
-  return extractedTexts;
+  const filteredExtractedTexts = filterExcludedSentences(extractedTexts);
+
+  return filteredExtractedTexts;
 };
+
 export default parseXLF;

@@ -26,8 +26,7 @@ export const writeLogToFile = async (logData, logType) => {
   );
 };
 
-export const SENTENCES_TO_IGNORE = [
-  "Select START MODULE to begin. Be sure to click on the interactive elements to advance.",
+export const EXCLUDE_SENTENCES = [
   "Please look at these important terms.",
   'Select "+" to expand.',
   "CONTINUE",
