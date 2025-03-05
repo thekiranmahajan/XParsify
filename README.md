@@ -14,7 +14,7 @@ XParsify is a powerful web app that allows users to **convert .XLF and .DOCX fil
 ## 🖥️ Tech Stack
 
 - **Frontend:** React, Vite, DaisyUI, TailwindCSS
-- **Backend:** Node.js, Express, Multer, xml2js, json2csv, xlsx, mammoth
+- **Backend:** Node.js, Express, Multer, xml2js, json2csv, xlsx, unzipper
 - **Deployment:** Vercel (Frontend), Railway/Render (Backend)
 
 ## 🚀 Getting Started
