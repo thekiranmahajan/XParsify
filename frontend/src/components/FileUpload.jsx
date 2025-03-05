@@ -52,23 +52,13 @@ const FileUpload = ({ onFilesSelected }) => {
     onFilesSelected(newFiles);
   };
 
-  const handleConvertAll = (formats) => {
-    // Logic to handle batch conversion and download
-  };
-
   if (files.length > 0) {
-    return (
-      <SelectedFiles
-        files={files}
-        onRemoveFile={removeFile}
-        onConvertAll={handleConvertAll}
-      />
-    );
+    return <SelectedFiles files={files} onRemoveFile={removeFile} />;
   }
 
   return (
     <div
-      className={`p-6 border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-center cursor-pointer transition-all select-none w-3xl h-60  ${
+      className={`p-6 border-2 border-dashed rounded-lg flex flex-col items-center justify-center text-center cursor-pointer transition-all select-none w-3xl h-60 ${
         isDragging
           ? "border-primary bg-primary/10"
           : "border-gray-300 bg-base-200 hover:bg-base-300"

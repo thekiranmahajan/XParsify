@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   RiDeleteBin2Line,
   RiFileTransferLine,
@@ -14,12 +14,24 @@ const SelectedFiles = ({ files, onRemoveFile }) => {
   );
   const [convertedFiles, setConvertedFiles] = useState({});
   const [isConverting, setIsConverting] = useState(false);
+  const [isConvertingBatch, setIsConvertingBatch] = useState(false);
   const [batchDownloadUrl, setBatchDownloadUrl] = useState("");
+  const [isDownloadDisabled, setIsDownloadDisabled] = useState(
+    files.map(() => true)
+  );
+
+  useEffect(() => {
+    setIsDownloadDisabled(files.map(() => true));
+  }, [files]);
 
   const handleFormatChange = (index, format) => {
     const newFormats = [...conversionFormats];
     newFormats[index] = format;
     setConversionFormats(newFormats);
+
+    const newDownloadDisabled = [...isDownloadDisabled];
+    newDownloadDisabled[index] = true;
+    setIsDownloadDisabled(newDownloadDisabled);
   };
 
   const handleConvert = async (index = null) => {
@@ -37,6 +49,9 @@ const SelectedFiles = ({ files, onRemoveFile }) => {
             ...prev,
             [index]: response.data.result.downloadUrl,
           }));
+          const newDownloadDisabled = [...isDownloadDisabled];
+          newDownloadDisabled[index] = false;
+          setIsDownloadDisabled(newDownloadDisabled);
         }
         toast.success("File converted successfully!");
       } catch (error) {
@@ -59,6 +74,15 @@ const SelectedFiles = ({ files, onRemoveFile }) => {
       }
     }
     setIsConverting(false);
+  };
+
+  const handleBatchConvert = async () => {
+    setIsConvertingBatch(true);
+    await handleConvert();
+    if (batchDownloadUrl) {
+      window.location.href = batchDownloadUrl;
+    }
+    setIsConvertingBatch(false);
   };
 
   const truncateFileName = (name) => {
@@ -103,28 +127,31 @@ const SelectedFiles = ({ files, onRemoveFile }) => {
             >
               <RiDeleteBin2Line className="size-4" />
             </button>
-            {convertedFiles[index] && (
-              <a
-                href={convertedFiles[index]}
-                download
-                className="btn btn-success btn-xs"
-              >
-                <RiDownloadLine />
-              </a>
-            )}
+            <a
+              href={convertedFiles[index]}
+              download
+              className="btn btn-success btn-xs"
+              disabled={isDownloadDisabled[index]}
+            >
+              <RiDownloadLine />
+            </a>
           </div>
         </div>
       ))}
       {files.length > 1 && (
-        <a
-          href={batchDownloadUrl}
-          download
+        <button
           className="btn btn-primary mt-4 w-56"
-          onClick={() => handleConvert()}
-          disabled={conversionFormats.some((format) => !format) || isConverting}
+          onClick={handleBatchConvert}
+          disabled={
+            conversionFormats.some((format) => !format) || isConvertingBatch
+          }
         >
-          Convert All and Download
-        </a>
+          {isConvertingBatch && !batchDownloadUrl ? (
+            <span className="loading loading-spinner"></span>
+          ) : (
+            "Convert All and Download"
+          )}
+        </button>
       )}
     </div>
   );

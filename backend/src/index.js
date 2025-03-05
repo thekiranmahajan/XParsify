@@ -8,8 +8,6 @@ import { downloadFile } from "./utils/file.utility.js";
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-app.use("/api/files", express.static(convertedDir));
-
 const allowedOrigins = ["http://localhost:5173"];
 
 app.use(
