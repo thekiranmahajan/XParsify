@@ -157,7 +157,7 @@ export const convertWordToText = async (filePath, outputPath) => {
     const extractedTexts = await parseWord(filePath);
 
     const textContent = extractedTexts
-      .map((entry) => `${entry.lesson}\n${entry.notes}`)
+      .map((entry) => `${entry.lesson}\n\n${entry.notes}`)
       .join("\n\n");
 
     await fs.promises.writeFile(outputPath, textContent);
@@ -245,6 +245,7 @@ export const convertWordToWord = async (filePath, outputPath) => {
             new Paragraph({
               children: [new TextRun({ text: entry.lesson, bold: true })],
             }),
+            new Paragraph({ text: "" }),
             new Paragraph({ text: entry.notes }),
             new Paragraph({ text: "" }),
           ]),

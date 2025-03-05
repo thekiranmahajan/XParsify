@@ -4,6 +4,7 @@ import path from "path";
 import unzipper from "unzipper";
 import xml2js from "xml2js";
 import { writeLogToFile } from "./constants.utility.js";
+import { cleanupFiles } from "./file.utility.js";
 
 const stripRtf = (rtf) => {
   return rtf
@@ -82,12 +83,16 @@ const parseWord = async (uploadedFilePath) => {
     const lessons = await extractLessons(tempExtractPath);
     const notes = await extractNotes(tempExtractPath);
 
-    lessons.forEach((lesson, idx) => {
-      lesson["notes:"] = notes[idx] || "";
-    });
+    const parsedData = lessons.map((lesson, idx) => ({
+      lesson: lesson.lesson,
+      notes: notes[idx] || "",
+    }));
 
-    await writeLogToFile(lessons, "parsedWordMerged");
-    return lessons;
+    await writeLogToFile(parsedData, "parsedWordMerged");
+
+    await cleanupFiles([tempExtractPath]);
+
+    return parsedData;
   } catch (error) {
     console.error("Error parsing DOCX:", error);
     throw error;

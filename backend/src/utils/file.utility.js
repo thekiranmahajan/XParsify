@@ -22,7 +22,12 @@ export const cleanupFiles = async (files) => {
   for (const file of files) {
     try {
       if (file.includes("uploads")) {
-        await fs.unlink(file);
+        const stat = await fs.lstat(file);
+        if (stat.isDirectory()) {
+          await fs.rm(file, { recursive: true, force: true });
+        } else {
+          await fs.unlink(file);
+        }
       }
     } catch (error) {
       console.error(`Error removing file ${file}:`, error);
