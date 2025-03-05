@@ -6,16 +6,20 @@ export const downloadFile = async (req, res) => {
   const { filename } = req.params;
   const filePath = path.join(convertedDir, filename);
 
-  if (!fs.existsSync(filePath)) {
-    throw new Error("File not found");
+  try {
+    await fs.access(filePath);
+    res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
+    res.setHeader("Content-Type", "application/octet-stream");
+    res.download(filePath, filename, (err) => {
+      if (err) {
+        console.error("Download error:", err);
+        res.status(500).send("Error downloading file");
+      }
+    });
+  } catch (error) {
+    console.error("File not found:", error);
+    res.status(404).send("File not found");
   }
-
-  res.download(filePath, filename, (err) => {
-    if (err) {
-      console.error("Download error:", err);
-      throw err;
-    }
-  });
 };
 
 export const cleanupFiles = async (files) => {

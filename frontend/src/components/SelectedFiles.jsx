@@ -4,7 +4,7 @@ import {
   RiFileTransferLine,
   RiDownloadLine,
 } from "react-icons/ri";
-import { BACKEND_BASE_URL, FORMATS } from "../utils/constants";
+import { FORMATS } from "../utils/constants";
 import axiosInstance from "../utils/axiosInstance";
 import toast from "react-hot-toast";
 
@@ -14,6 +14,7 @@ const SelectedFiles = ({ files, onRemoveFile }) => {
   );
   const [convertedFiles, setConvertedFiles] = useState({});
   const [isConverting, setIsConverting] = useState(false);
+  const [batchDownloadUrl, setBatchDownloadUrl] = useState("");
 
   const handleFormatChange = (index, format) => {
     const newFormats = [...conversionFormats];
@@ -39,22 +40,22 @@ const SelectedFiles = ({ files, onRemoveFile }) => {
         }
         toast.success("File converted successfully!");
       } catch (error) {
-        toast.error("Error converting file");
+        toast.error(error?.response?.data?.message || "Error converting file");
       }
     } else {
-      files.forEach((file, idx) => {
+      files.forEach((file) => {
         formData.append("files", file);
       });
       formData.append("formats", conversionFormats.join(","));
 
       try {
         const response = await axiosInstance.post("/convert-batch", formData);
-        if (response.data.convertedFiles) {
-          setConvertedFiles(response.data.convertedFiles);
+        if (response.data.downloadUrl) {
+          setBatchDownloadUrl(response.data.downloadUrl);
         }
         toast.success("Files converted successfully!");
       } catch (error) {
-        toast.error("Error converting files");
+        toast.error(error?.response?.data?.message || "Error converting files");
       }
     }
     setIsConverting(false);
@@ -104,12 +105,8 @@ const SelectedFiles = ({ files, onRemoveFile }) => {
             </button>
             {convertedFiles[index] && (
               <a
-                href={`${BACKEND_BASE_URL}${convertedFiles[index]}`}
-                download={
-                  files[index].name.replace(/\.[^/.]+$/, "") +
-                  "." +
-                  conversionFormats[index]
-                }
+                href={convertedFiles[index]}
+                download
                 className="btn btn-success btn-xs"
               >
                 <RiDownloadLine />
@@ -119,13 +116,15 @@ const SelectedFiles = ({ files, onRemoveFile }) => {
         </div>
       ))}
       {files.length > 1 && (
-        <button
+        <a
+          href={batchDownloadUrl}
+          download
           className="btn btn-primary mt-4 w-56"
           onClick={() => handleConvert()}
           disabled={conversionFormats.some((format) => !format) || isConverting}
         >
           Convert All and Download
-        </button>
+        </a>
       )}
     </div>
   );

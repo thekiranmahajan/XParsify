@@ -3,6 +3,7 @@ import cors from "cors";
 import apiRoutes from "./routes/api.route.js";
 import { __dirname, frontendDistDir, convertedDir } from "./utils/dirname.js";
 import path from "path";
+import { downloadFile } from "./utils/file.utility.js";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -19,6 +20,8 @@ app.use(
 
 app.use(express.json());
 app.use("/api", apiRoutes);
+
+app.get("/api/files/:filename", downloadFile);
 
 /*********PRODUCTION CODE**********/
 if (process.env.NODE_ENV === "production") {

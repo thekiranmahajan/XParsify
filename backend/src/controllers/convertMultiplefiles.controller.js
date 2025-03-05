@@ -31,9 +31,12 @@ const convertMultipleFiles = async (req, res) => {
 
     res.json({
       success: true,
-      downloadUrl: `/api/files/${path.basename(zipFilePath)}`,
+      downloadUrl: `${req.protocol}://${req.get(
+        "host"
+      )}/api/files/${path.basename(zipFilePath)}`,
     });
   } catch (error) {
+    console.error("Batch conversion error:", error);
     res
       .status(500)
       .json({ error: "Batch conversion failed", details: error.message });

@@ -23,7 +23,9 @@ const convertSingleFile = async (req, res) => {
       success: true,
       result: {
         fileName: file.originalname,
-        downloadUrl: `/api/files/${path.basename(outputPath)}`,
+        downloadUrl: `${req.protocol}://${req.get(
+          "host"
+        )}/api/files/${path.basename(outputPath)}`,
       },
     });
   } catch (error) {

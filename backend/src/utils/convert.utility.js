@@ -268,14 +268,16 @@ export const createZipArchive = async (files) => {
   const output = fs.createWriteStream(finalPath);
   const archive = archiver("zip", { zlib: { level: 9 } });
 
-  archive.pipe(output);
-
-  files.forEach((file) => {
-    archive.file(file.path, { name: path.basename(file.path) });
-  });
-
   return new Promise((resolve, reject) => {
     output.on("close", () => resolve(finalPath));
+    archive.on("error", (err) => reject(err));
+
+    archive.pipe(output);
+
+    files.forEach((file) => {
+      archive.file(file.path, { name: path.basename(file.path) });
+    });
+
     archive.finalize();
   });
 };
