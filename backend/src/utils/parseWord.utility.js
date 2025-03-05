@@ -1,40 +1,95 @@
-import mammoth from "mammoth";
+import fs from "fs/promises";
+import { createReadStream } from "fs";
+import path from "path";
+import unzipper from "unzipper";
+import xml2js from "xml2js";
 import { writeLogToFile } from "./constants.utility.js";
 
-const parseWord = async (filePath) => {
-  try {
-    const { value: extractedText } = await mammoth.extractRawText({
-      path: filePath,
-    });
+const stripRtf = (rtf) => {
+  return rtf
+    .replace(/({\\fonttbl.*?})/gs, "")
+    .replace(/({\\colortbl.*?})/gs, "")
+    .replace(/({\\\*\\generator.*?})/gs, "")
+    .replace(/({\\.*?})/gs, "")
+    .replace(/\\[a-zA-Z]+\d* ?/g, "")
+    .replace(/\\'[0-9a-fA-F]{2}/g, (match) =>
+      String.fromCharCode(parseInt(match.slice(2), 16))
+    )
+    .replace(/\\par[d]?/g, " ")
+    .replace(/[{}]/g, "")
+    .replace(/[\u0000]/g, "")
+    .replace(/-147/g, "")
+    .replace(/\r?\n|\r/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+};
 
-    const lines = extractedText.split("\n").map((line) => line.trim());
-    const lessons = [];
-    let currentLesson = null;
+const unzipDocx = async (filePath, outputDir) => {
+  await fs.mkdir(outputDir, { recursive: true });
+  await createReadStream(filePath)
+    .pipe(unzipper.Extract({ path: outputDir }))
+    .promise();
+};
 
-    lines.forEach((line) => {
-      if (line.startsWith("Lesson:")) {
-        if (currentLesson) {
-          lessons.push(currentLesson);
-        }
-        currentLesson = { lesson: line, notes: "" };
-      } else if (currentLesson) {
-        currentLesson.notes += `${line}\n`;
-      }
-    });
+const extractLessons = async (dirPath) => {
+  const xmlPath = path.join(dirPath, "word/document2.xml");
+  const xmlData = await fs.readFile(xmlPath, "utf-8");
+  const parser = new xml2js.Parser();
+  const result = await parser.parseStringPromise(xmlData);
 
-    if (currentLesson) {
-      lessons.push(currentLesson);
-    }
+  const paragraphs = result["w:document"]["w:body"]?.[0]["w:p"] || [];
 
-    const result = lessons.map((lesson) => ({
-      lesson: lesson.lesson,
-      notes: lesson.notes.trim(),
+  const lessons = paragraphs
+    .map((p) =>
+      p["w:r"]
+        ?.map((r) => r["w:t"]?.[0])
+        .filter(Boolean)
+        .join(" ")
+    )
+    .filter(Boolean)
+    .filter((heading) => heading.startsWith("1."))
+    .slice(1)
+    .map((heading) => ({
+      lesson: heading.replace(/\r?\n|\r/g, " ").trim(),
     }));
 
-    await writeLogToFile(result, "parseWord");
-    return result;
+  return lessons;
+};
+
+const extractNotes = async (dirPath) => {
+  const datFiles = (await fs.readdir(path.join(dirPath, "word")))
+    .filter((f) => f.startsWith("afchunk") && f.endsWith(".dat"))
+    .sort((a, b) => parseInt(a.match(/\d+/)) - parseInt(b.match(/\d+/)));
+
+  const notes = [];
+  for (const file of datFiles) {
+    const rawContent = await fs.readFile(
+      path.join(dirPath, "word", file),
+      "utf-8"
+    );
+    const cleanText = stripRtf(rawContent);
+    notes.push(cleanText);
+  }
+
+  return notes;
+};
+
+const parseWord = async (uploadedFilePath) => {
+  try {
+    const tempExtractPath = uploadedFilePath + "_unzipped";
+    await unzipDocx(uploadedFilePath, tempExtractPath);
+
+    const lessons = await extractLessons(tempExtractPath);
+    const notes = await extractNotes(tempExtractPath);
+
+    lessons.forEach((lesson, idx) => {
+      lesson["notes:"] = notes[idx] || "";
+    });
+
+    await writeLogToFile(lessons, "parsedWordMerged");
+    return lessons;
   } catch (error) {
-    console.error("Error parsing Word file:", error);
+    console.error("Error parsing DOCX:", error);
     throw error;
   }
 };
