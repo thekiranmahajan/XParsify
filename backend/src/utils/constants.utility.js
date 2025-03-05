@@ -25,3 +25,14 @@ export const writeLogToFile = async (logData, logType) => {
     JSON.stringify(logData, null, 2) + "\n"
   );
 };
+
+export const SENTENCES_TO_IGNORE = [
+  "Select START MODULE to begin. Be sure to click on the interactive elements to advance.",
+  "Please look at these important terms.",
+  'Select "+" to expand.',
+  "CONTINUE",
+  "Complete the content above before moving on.",
+  "Choose the best option and select SUBMIT.",
+  "Select each request to view the matching right.",
+  "Scroll through each section to view the text.",
+];

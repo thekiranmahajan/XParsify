@@ -88,7 +88,7 @@ const parseWord = async (uploadedFilePath) => {
       notes: notes[idx] || "",
     }));
 
-    await writeLogToFile(parsedData, "parsedWordMerged");
+    // await writeLogToFile(parsedData, "parsedWordMerged");
 
     await cleanupFiles([tempExtractPath]);
 

@@ -17,7 +17,7 @@ export const convertXLFToWord = async (filePath, outputPath) => {
   const extractedTexts = await parseXLF(filePath);
   console.log(extractedTexts);
   const filteredTexts = processExtractedTexts(extractedTexts);
-  writeLogToFile(filteredTexts, "convertXLFToWord");
+  // writeLogToFile(filteredTexts, "convertXLFToWord");
   const doc = new Document({
     sections: [
       {
@@ -161,7 +161,7 @@ export const convertWordToText = async (filePath, outputPath) => {
       .join("\n\n");
 
     await fs.promises.writeFile(outputPath, textContent);
-    await writeLogToFile(extractedTexts, "convertWordToText");
+    // await writeLogToFile(extractedTexts, "convertWordToText");
     return outputPath;
   } catch (error) {
     console.error("Error converting to Text:", error);
@@ -176,7 +176,7 @@ export const convertWordToCSV = async (filePath, outputPath) => {
       fields: ["lesson", "notes"],
     });
     await fs.promises.writeFile(outputPath, csvContent);
-    await writeLogToFile(extractedTexts, "convertWordToCSV");
+    // await writeLogToFile(extractedTexts, "convertWordToCSV");
     return outputPath;
   } catch (error) {
     console.error("Error converting to CSV:", error);
@@ -210,7 +210,7 @@ export const convertWordToExcel = async (filePath, outputPath) => {
     });
 
     await workbook.xlsx.writeFile(outputPath);
-    await writeLogToFile(extractedTexts, "convertWordToExcel");
+    // await writeLogToFile(extractedTexts, "convertWordToExcel");
     return outputPath;
   } catch (error) {
     console.error("Error converting to Excel:", error);
@@ -226,7 +226,7 @@ export const convertWordToJSON = async (filePath, outputPath) => {
       outputPath,
       JSON.stringify(extractedTexts, null, 2)
     );
-    await writeLogToFile(extractedTexts, "convertWordToJSON");
+    // await writeLogToFile(extractedTexts, "convertWordToJSON");
     return outputPath;
   } catch (error) {
     console.error("Error converting to JSON:", error);
@@ -255,7 +255,7 @@ export const convertWordToWord = async (filePath, outputPath) => {
 
     const buffer = await Packer.toBuffer(doc);
     await fs.promises.writeFile(outputPath, buffer);
-    await writeLogToFile(extractedTexts, "convertWordToWord");
+    // await writeLogToFile(extractedTexts, "convertWordToWord");
     return outputPath;
   } catch (error) {
     console.error("Error converting to Word:", error);
