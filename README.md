@@ -50,7 +50,7 @@ npm run dev
 
 ## 📸 Screenshots
 
-![XParsify UI](./assets/ui-preview.png)
+![XParsify UI](./frontend/public/image.png)
 
 ## 📜 License
 
