@@ -8,8 +8,11 @@ export const downloadFile = async (req, res) => {
 
   try {
     await fs.access(filePath);
+    const mimeType = mime.lookup(filename) || "application/octet-stream";
     res.setHeader("Content-Disposition", `attachment; filename="${filename}"`);
-    res.setHeader("Content-Type", "application/octet-stream");
+    res.setHeader("Content-Type", mimeType);
+    res.setHeader("X-Content-Type-Options", "nosniff");
+    res.setHeader("Content-Security-Policy", "default-src 'none';");
     res.download(filePath, filename, (err) => {
       if (err) {
         console.error("Download error:", err);
